@@ -22,19 +22,26 @@ struct cb_buffer{
 typedef struct cb_buffer cb_s;
 
 
-int parseParameters(int argc, char *argv[]){
-  int n = 10;
-  if (argc == 3 && argv[1][1] == 'n') {
-    sscanf(argv[2], "%d", &n);
+FILE *parseParameters(int argc, char *argv[], int *n){
+  *n = 10;
+  if (argc >= 3 && argv[1][1] == 'n') {
+    sscanf(argv[2], "%d", n);
+    if (argc == 4) {
+      FILE *fp = fopen(argv[3], "r");
+      if (fp == NULL) {
+        fprintf(stderr, "File not found or can't access");
+      }
+      return fp;
+    }
   }
-  return n;
+  return NULL;
 }
 
 cb_s* cb_create(int size){
   cb_s *circBuffer = malloc(sizeof(cb_s));
   cbEl_s *prev_element = malloc(sizeof(cbEl_s));
   cbEl_s *first_element = prev_element;
-  for (int i = 1; i < size; i ++) {
+  for (int i = 0; i < size; i ++) {
     prev_element->next = malloc(sizeof(cbEl_s));
     prev_element->line = malloc(MAX_LENGTH);
     prev_element = prev_element->next;
@@ -65,15 +72,15 @@ void debug_cb(cb_s *cb){
 }
 
 int cb_put(cb_s *cb, char *line){
-  memcpy(cb->write->line, line, 10);
+  if (cb->write->next == cb->read) {
+    cb->read = cb->read->next;
+  }
+  memcpy(cb->write->line, line, strlen(line) + 1);
   cb->write = cb->write->next;
   return EXIT_SUCCESS;
 }
 
 char *cb_get(cb_s *cb){
-  if (cb->read == cb->write) {
-    return NULL;
-  }
   char *line = cb->read->line;
   cb->read = cb->read->next;
   return line;
@@ -84,12 +91,15 @@ int cb_free(cb_s *cb){
   cb->read = cb->write->next;
   
   
-  while (cb->write->next != first) {
-    free(cb->write->line);
+  do {
+    if (cb->write->line != NULL) {
+      free(cb->write->line);
+    }
     free(cb->write);
     cb->write = cb->read;
     cb->read = cb->read->next;
   }
+  while (cb->write->next != first) ;
   
   free(cb->write->line);
   free(cb->write);
@@ -98,24 +108,58 @@ int cb_free(cb_s *cb){
   return EXIT_SUCCESS;
 }
 
+int read_buffer(cb_s *cb, int n, FILE *fp){
+  int length = 0;
+  int c = 0;
+  char line[MAX_LENGTH] = {0};
+  
+  do {
+    c = fgetc(fp);
+    printf("Progress[%c][%s]\n", c,line);
+    if (c == '\n') {
+      printf("Putting[%s]\n", line);
+      char line[MAX_LENGTH] = {0};
+      memset(line, 0, MAX_LENGTH);
+      length = 0;
+    }
+    else {
+      line[length] = c;
+      length++;
+    }
+  }
+  while (c != EOF);
+  return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[])
 {
-  int n = parseParameters(argc, argv);
+  int np;
+  int *n = &np;
   
-  cb_s *cb = cb_create(n);
-
-  char hello[10] = "Hiii";
+  FILE *fp = parseParameters(argc, argv, n);
+  
+  cb_s *cb = cb_create(*n);
+  
+  if (fp == NULL) {
+    read_buffer(cb, *n, stdin);
+  }
+  
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  // printf("%s\n", cb_get(cb));
+  
 
   debug_cb(cb);
-
-  cb_put(cb, hello);
-
-  printf("%s\n", cb_get(cb));
-  printf("%s\n", cb_get(cb));
   
-
   cb_free(cb);
   
-  printf("tail on %d lines\n", n);
+  printf("tail on %d lines\n", *n);
   return EXIT_SUCCESS;
 }
