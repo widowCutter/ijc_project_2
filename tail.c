@@ -24,17 +24,19 @@ typedef struct cb_buffer cb_s;
 
 FILE *parseParameters(int argc, char *argv[], int *n){
   *n = 10;
-  if (argc >= 3 && argv[1][1] == 'n') {
-    sscanf(argv[2], "%d", n);
-    if (argc == 4) {
-      FILE *fp = fopen(argv[3], "r");
-      if (fp == NULL) {
-        fprintf(stderr, "File not found or can't access");
-      }
-      return fp;
-    }
+  FILE *fp = NULL;
+  switch (argc) {
+    case 2:
+      fp = fopen(argv[1], "r");
+    break;
+    case 4:
+      fp = fopen(argv[3], "r");
+      __attribute__ ((fallthrough));
+    case 3:
+      sscanf(argv[2], "%d", n);
+    break;
   }
-  return NULL;
+  return fp;
 }
 
 cb_s* cb_create(int size){
@@ -108,27 +110,39 @@ int cb_free(cb_s *cb){
   return EXIT_SUCCESS;
 }
 
-int read_buffer(cb_s *cb, int n, FILE *fp){
+int read_buffer(cb_s *cb, FILE *fp){
   int length = 0;
   int c = 0;
   char line[MAX_LENGTH] = {0};
   
   do {
     c = fgetc(fp);
-    printf("Progress[%c][%s]\n", c,line);
     if (c == '\n') {
-      printf("Putting[%s]\n", line);
-      char line[MAX_LENGTH] = {0};
+      cb_put(cb, line);
       memset(line, 0, MAX_LENGTH);
       length = 0;
     }
     else {
       line[length] = c;
       length++;
+      if (length >= MAX_LENGTH - 1) {
+        cb_put(cb, line);
+        memset(line, 0, MAX_LENGTH);
+        length = 0;
+        while (c != '\n' && c != EOF) {
+          c = fgetc(fp);
+        }
+      }
     }
   }
   while (c != EOF);
   return EXIT_SUCCESS;
+}
+
+void print_cb(cb_s *cb){
+  while (cb->read != cb->write) {
+    printf("%s\n", cb_get(cb));
+  }
 }
 
 int main(int argc, char *argv[])
@@ -141,25 +155,17 @@ int main(int argc, char *argv[])
   cb_s *cb = cb_create(*n);
   
   if (fp == NULL) {
-    read_buffer(cb, *n, stdin);
+    read_buffer(cb, stdin);
+  }
+  else {
+    read_buffer(cb, fp);
   }
   
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  // printf("%s\n", cb_get(cb));
-  
+  print_cb(cb);
 
-  debug_cb(cb);
+  
   
   cb_free(cb);
   
-  printf("tail on %d lines\n", *n);
   return EXIT_SUCCESS;
 }
