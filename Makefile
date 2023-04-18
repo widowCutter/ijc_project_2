@@ -3,9 +3,9 @@ build: tail wordcount-s wordcount-d
 	
 
 run: wordcount-s wordcount-d tail
-	./wordcount
-	LD_LIBRARY_PATH="." ./wordcount-dynamic
-	./tail -n 10 
+	./wordcount < ./stdin.txt
+	LD_LIBRARY_PATH="." ./wordcount-dynamic < ./stdin.txt
+	# ./tail -n 10 
 	
 tail: tail.c
 	gcc -g -std=c11 -pedantic -Wall -Wextra tail.c -o tail
@@ -23,7 +23,7 @@ libhtab-d: libhtab-o
 	$(CC) $(CFLAGS) -shared -o libhtab.so htab_*.o
 
 libhtab-o: htab_*.c
-	$(CC) -c htab_*.c
+	$(CC) -c htab_*.c -fPIC
 
 clean:
 	rm *.o libhtab.a libhtab.so
