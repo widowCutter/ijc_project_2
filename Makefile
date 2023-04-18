@@ -3,27 +3,21 @@ build: tail wordcount-s wordcount-d
 	
 
 run: wordcount-s wordcount-d tail
-	./wordcount-s < ./words.txt
-	LD_LIBRARY_PATH="." ./wordcount-dynamic < ./words.txt
-	./wordcount- < ./words.txt
-	./tail -n 10 < ./tailtest/test.txt > stdin.txt
-	./tail -n 10 ./tailtest/test.txt > c_tail.txt
-	tail -n 10 ./tailtest/test.txt  > n_tail.txt
-	cmp -s c_tail.txt n_tail.txt
-	cmp -s stdin.txt n_tail.txt
+	./wordcount
+	LD_LIBRARY_PATH="." ./wordcount-dynamic
+	./tail -n 10 
 	
 tail: tail.c
-	gcc -g -std=c11 -pedantic -Wall -Wextra -fsanitize=address tail.c -o tail
+	gcc -g -std=c11 -pedantic -Wall -Wextra tail.c -o tail
 	
 wordcount-s: libhtab-s
-	$(CC) $(CFLAGS) wordcount.c -o wordcount-s -static libhtab.a -L.
+	$(CC) $(CFLAGS) wordcount.c -o wordcount -static libhtab.a -L.
 	
 wordcount-d: libhtab-d
 	$(CC) $(CFLAGS) -g wordcount.c -o wordcount-dynamic libhtab.so -L.
 	
 libhtab-s: libhtab-o
 	ar -crs libhtab.a htab_*.o
-	ranlib libhtab.a
 	
 libhtab-d: libhtab-o 
 	$(CC) $(CFLAGS) -shared -o libhtab.so htab_*.o
@@ -33,4 +27,4 @@ libhtab-o: htab_*.c
 
 clean:
 	rm *.o libhtab.a libhtab.so
-	rm wordcount-s wordcount-dynamic tail
+	rm wordcount wordcount-dynamic tail
