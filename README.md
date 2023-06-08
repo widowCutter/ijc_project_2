@@ -1,6 +1,13 @@
 # ijc_projekt_2
 IJC: DU2
 
+Points: 13/15
+
+Evaluation message:
+{
+Neuvolnena pamat v tail (-0.5) Neuvolnena pamat vo wordcount (-0.5) Valgrind hlasi chyby pri wc (-1b) 
+}
+
 
 Jazyk C                       DU2                      21.3.2023
 ----------------------------------------------------------------
